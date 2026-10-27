@@ -1,0 +1,176 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: BIT-PLANE DECOMPOSITION
+%  =========================================================
+
+% Read grayscale image
+I = imread('cameraman.tif');
+
+
+%% Display All 8 Bit Planes
+
+figure('Name', 'Bit Plane Decomposition');
+
+for b = 1:8
+
+    % Extract individual bit plane
+    bitPlane = bitget(I, b);
+
+    % Convert to logical image
+    bitPlane = logical(bitPlane);
+
+    % Display bit plane
+    subplot(2,4,b);
+    imshow(bitPlane);
+    title(sprintf('Bit Plane %d', b-1));
+
+end
+
+
+%% =========================================================
+%  PART B: IMAGE RECONSTRUCTION USING MSB PLANES
+%  =========================================================
+
+% Keep the 4 most significant bits
+R4 = bitand(I, uint8(240));
+
+% Keep the 2 most significant bits
+R2 = bitand(I, uint8(192));
+
+
+%% Display Reconstruction Results
+
+figure('Name', 'Reconstruction from MSB Planes');
+
+subplot(1,3,1);
+imshow(I);
+title('Original');
+
+subplot(1,3,2);
+imshow(R4);
+title(sprintf('4 Planes (%.1f dB)', psnr(R4,I)));
+
+subplot(1,3,3);
+imshow(R2);
+title(sprintf('2 Planes (%.1f dB)', psnr(R2,I)));
+
+
+%% =========================================================
+%  PART C: LOSSLESS PREDICTIVE CODING
+%  =========================================================
+
+% Convert image to double precision
+X = double(I);
+
+
+%% Generate Prediction Error
+
+% Initialize prediction error
+E = X;
+
+% Calculate horizontal prediction error
+E(:,2:end) = X(:,2:end) - X(:,1:end-1);
+
+
+%% Reconstruct Original Image
+
+Xr = cumsum(E, 2);
+
+
+%% =========================================================
+%  PART D: IMAGE ENTROPY
+%  =========================================================
+
+% Calculate probability distribution of original image
+pI = imhist(I) / numel(I);
+
+% Remove zero probabilities
+pI = pI(pI > 0);
+
+
+%% Calculate Error Probability Distribution
+
+pE = histcounts(E(:), -255.5:255.5);
+
+pE = pE(pE > 0) / numel(E);
+
+
+%% Calculate Entropy
+
+HI = -sum(pI .* log2(pI));
+
+HE = -sum(pE .* log2(pE));
+
+
+%% =========================================================
+%  PART E: COMPRESSION ANALYSIS
+%  =========================================================
+
+% Achievable compression ratio
+CR_image = 8 / HI;
+
+CR_error = 8 / HE;
+
+
+%% Display Results
+
+fprintf('\n============================================\n');
+fprintf('      PREDICTIVE CODING RESULTS\n');
+fprintf('============================================\n');
+
+fprintf('Entropy of image = %.4f bits/pixel\n', HI);
+
+fprintf('Entropy of prediction error = %.4f bits/pixel\n', HE);
+
+fprintf('Achievable CR (image) = %.3f\n', CR_image);
+
+fprintf('Achievable CR (error) = %.3f\n', CR_error);
+
+fprintf('Lossless reconstruction = %d\n', ...
+    isequal(Xr, X));
+
+
+%% =========================================================
+%  PART F: DISPLAY PREDICTIVE CODING RESULTS
+%  =========================================================
+
+figure('Name', 'Predictive Coding');
+
+
+%% Original Image
+
+subplot(1,3,1);
+imshow(I);
+title('Original');
+
+
+%% Prediction Error
+
+subplot(1,3,2);
+imshow(E, [-50 50]);
+title('Prediction Error');
+
+
+%% Error Histogram
+
+subplot(1,3,3);
+histogram(E(:), -100:100);
+title('Error Histogram');
+xlabel('Prediction Error');
+
+
+%% =========================================================
+%  PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\n============================================\n');
+fprintf(' IMAGE COMPRESSION ANALYSIS COMPLETED\n');
+fprintf('============================================\n');
+
+fprintf('Bit-plane decomposition completed.\n');
+fprintf('MSB plane reconstruction completed.\n');
+fprintf('Predictive coding completed.\n');
+fprintf('Entropy calculation completed.\n');
