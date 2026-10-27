@@ -1,0 +1,182 @@
+clc;
+clear;
+close all;
+
+
+%% STEP 1: Read Input Image
+
+I = imread('coins.png');
+
+
+%% STEP 2: Correlation-Based Template Matching
+
+figure;
+imshow(I);
+title('Select a coin template and double-click');
+
+
+%% STEP 3: Select Template
+
+T = imcrop;
+
+
+%% STEP 4: Calculate Normalized Cross-Correlation
+
+c = normxcorr2(T, I);
+
+
+%% STEP 5: Detect Matching Locations
+
+pk = imregionalmax(c) & c > 0.75;
+
+[yp, xp] = find(pk);
+
+
+%% STEP 6: Display Template Matching Results
+
+figure('Name','Template Matching');
+
+% Display selected template
+subplot(1,3,1);
+imshow(T);
+title('Template');
+
+
+% Display correlation surface
+subplot(1,3,2);
+surf(c);
+shading flat;
+title('Normalized Cross-Correlation');
+
+
+% Display detected matches
+subplot(1,3,3);
+imshow(I);
+hold on;
+
+title(sprintf('%d Matches', numel(yp)));
+
+
+%% STEP 7: Draw Rectangles Around Matches
+
+for k = 1:numel(yp)
+
+    rectangle('Position', ...
+        [xp(k)-size(T,2)+1, ...
+         yp(k)-size(T,1)+1, ...
+         size(T,2), ...
+         size(T,1)], ...
+        'EdgeColor', 'r', ...
+        'LineWidth', 2);
+
+end
+
+
+%% STEP 8: Image Segmentation for Coin Classification
+
+bw = imfill(imbinarize(I), 'holes');
+
+% Remove small objects
+bw = bwareaopen(bw, 100);
+
+
+%% STEP 9: Extract Coin Features
+
+s = regionprops(bw, I, ...
+    'Area', ...
+    'MeanIntensity', ...
+    'Centroid');
+
+
+%% STEP 10: Create Feature Matrix
+
+X = [[s.Area]', ...
+     [s.MeanIntensity]'];
+
+
+%% STEP 11: Normalize Features
+
+Xn = (X - mean(X)) ./ std(X);
+
+
+%% STEP 12: Sort Coins According to Area
+
+[~, ord] = sort(X(:,1));
+
+
+%% STEP 13: Calculate Class Mean Vectors
+
+% Smaller coins
+m1 = mean(Xn(ord(1:2), :), 1);
+
+% Larger coins
+m2 = mean(Xn(ord(end-1:end), :), 1);
+
+
+%% STEP 14: Calculate Euclidean Distance
+
+d1 = sum((Xn - m1).^2, 2);
+
+d2 = sum((Xn - m2).^2, 2);
+
+
+%% STEP 15: Assign Coin Classes
+
+cls = 1 + (d2 < d1);
+
+
+%% STEP 16: Define Coin Labels
+
+label = {'Dime', 'Nickel'};
+
+
+%% STEP 17: Display Classified Coins
+
+figure('Name','Minimum-Distance Classifier');
+
+imshow(I);
+hold on;
+
+
+%% STEP 18: Display Classification Labels
+
+for k = 1:numel(s)
+
+    text(s(k).Centroid(1), ...
+         s(k).Centroid(2), ...
+         label{cls(k)}, ...
+         'Color', 'y', ...
+         'FontWeight', 'bold', ...
+         'HorizontalAlignment', 'center');
+
+end
+
+
+%% STEP 19: Display Classification Count
+
+title(sprintf('Dime: %d, Nickel: %d', ...
+    sum(cls == 1), ...
+    sum(cls == 2)));
+
+
+%% STEP 20: Feature-Space Visualization
+
+figure('Name','Feature Space');
+
+plot(X(cls == 1,1), ...
+     X(cls == 1,2), ...
+     'bo', ...
+     X(cls == 2,1), ...
+     X(cls == 2,2), ...
+     'rs', ...
+     'MarkerSize', 8, ...
+     'LineWidth', 1.5);
+
+xlabel('Area (pixels)');
+ylabel('Mean Intensity');
+
+legend(label);
+
+grid on;
+
+title('Coin Feature Vectors');
