@@ -1,0 +1,161 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: PIXEL NEIGHBOURHOODS
+%  =========================================================
+
+% Create a 5x5 magic matrix
+A = magic(5);
+
+fprintf('----- 5 x 5 MATRIX -----\n');
+disp(A);
+
+% Get pixel/element location from user
+r = input('Enter row (2 to 4): ');
+c = input('Enter column (2 to 4): ');
+
+% Display selected pixel value
+fprintf('\nPixel value = %d\n', A(r,c));
+
+%% Calculate 4-Neighbourhood
+N4 = [A(r-1,c), ...      % Up
+      A(r+1,c), ...      % Down
+      A(r,c-1), ...      % Left
+      A(r,c+1)];         % Right
+
+%% Calculate Diagonal Neighbourhood
+ND = [A(r-1,c-1), ...    % Upper-left
+      A(r-1,c+1), ...    % Upper-right
+      A(r+1,c-1), ...    % Lower-left
+      A(r+1,c+1)];       % Lower-right
+
+%% Calculate 8-Neighbourhood
+N8 = [N4, ND];
+
+% Display neighbourhood values
+fprintf('\n----- PIXEL NEIGHBOURHOODS -----\n');
+
+disp('N4 Neighbourhood =');
+disp(N4);
+
+disp('Diagonal Neighbourhood =');
+disp(ND);
+
+disp('N8 Neighbourhood =');
+disp(N8);
+
+
+%% =========================================================
+%  PART B: 4-CONNECTIVITY AND 8-CONNECTIVITY
+%  =========================================================
+
+% Create a binary image
+BW = logical([1 1 0 0 0 0;
+              1 1 0 0 1 0;
+              0 0 1 0 1 0;
+              0 0 0 1 0 0;
+              0 1 0 0 0 1;
+              0 1 0 0 0 1]);
+
+%% Calculate 4-Connectivity
+CC4 = bwconncomp(BW, 4);
+
+%% Calculate 8-Connectivity
+CC8 = bwconncomp(BW, 8);
+
+% Display number of connected components
+fprintf('\n----- CONNECTIVITY RESULTS -----\n');
+
+fprintf('4-connectivity components = %d\n', ...
+    CC4.NumObjects);
+
+fprintf('8-connectivity components = %d\n', ...
+    CC8.NumObjects);
+
+%% Display Binary Image
+figure('Name','Binary Image Connectivity');
+imshow(BW);
+title('Binary Image');
+
+
+%% =========================================================
+%  PART C: DISTANCE BETWEEN TWO PIXELS
+%  =========================================================
+
+% Read input image
+I = imread('cameraman.tif');
+
+%% Display Image and Select Two Pixels
+figure('Name','Pixel Distance');
+imshow(I);
+title('Select Two Pixels');
+
+% Select two points using mouse
+[x, y] = ginput(2);
+
+% Round coordinates to nearest pixel
+x = round(x);
+y = round(y);
+
+% Mark selected pixels
+hold on;
+plot(x, y, 'r+-');
+
+%% Calculate Euclidean Distance
+De = sqrt((x(1)-x(2))^2 + ...
+         (y(1)-y(2))^2);
+
+%% Calculate City-Block Distance
+D4 = abs(x(1)-x(2)) + ...
+     abs(y(1)-y(2));
+
+%% Calculate Chessboard Distance
+D8 = max(abs(x(1)-x(2)), ...
+         abs(y(1)-y(2)));
+
+%% Display Distance Results
+fprintf('\n----- DISTANCE RESULTS -----\n');
+
+fprintf('Euclidean distance  = %.4f\n', De);
+fprintf('City-block distance = %d\n', D4);
+fprintf('Chessboard distance = %d\n', D8);
+
+
+%% =========================================================
+%  PART D: DISTANCE MAPS
+%  =========================================================
+
+% Create a 101x101 binary image
+P = false(101);
+
+% Place a single reference pixel at the centre
+P(51,51) = true;
+
+%% Calculate Distance Maps
+EuclideanMap = bwdist(P, 'euclidean');
+CityBlockMap = bwdist(P, 'cityblock');
+ChessboardMap = bwdist(P, 'chessboard');
+
+%% Display Distance Maps
+figure('Name','Distance Maps');
+
+subplot(1,3,1);
+imshow(EuclideanMap, []);
+title('Euclidean');
+
+subplot(1,3,2);
+imshow(CityBlockMap, []);
+title('City-Block');
+
+subplot(1,3,3);
+imshow(ChessboardMap, []);
+title('Chessboard');
+
+
+%% =========================================================
+%  PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\nPixel neighbourhood, connectivity and distance analysis completed successfully!\n');
