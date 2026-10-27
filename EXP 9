@@ -1,0 +1,129 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: ADDING DIFFERENT TYPES OF NOISE
+%  =========================================================
+
+% Read input grayscale image
+I = imread('cameraman.tif');
+
+% Convert image to double precision
+Id = im2double(I);
+
+%% Add Different Noise Types
+
+% 1. Gaussian Noise
+Ng = imnoise(I, 'gaussian', 0, 0.01);
+
+% 2. Poisson Noise
+Np = imnoise(I, 'poisson');
+
+% 3. Salt and Pepper Noise
+Nsp = imnoise(I, 'salt & pepper', 0.05);
+
+% 4. Speckle Noise
+Nsk = imnoise(I, 'speckle', 0.04);
+
+% 5. Uniform Noise
+Nu = im2uint8(Id + 0.4 * (rand(size(Id)) - 0.5));
+
+% 6. Exponential Noise
+Ne = im2uint8(Id - 0.05 * log(1 - rand(size(Id))));
+
+
+%% Store Noisy Images and Labels
+
+noisy = {Ng, Np, Nsp, Nsk, Nu, Ne};
+
+labels = {'Gaussian', ...
+          'Poisson', ...
+          'Salt & Pepper', ...
+          'Speckle', ...
+          'Uniform', ...
+          'Exponential'};
+
+
+%% Display Noisy Images and Calculate PSNR
+
+figure('Name','Different Noise Types');
+
+for k = 1:6
+
+    % Display noisy image
+    subplot(2,3,k);
+    imshow(noisy{k});
+    title(labels{k});
+
+    % Calculate PSNR
+    PSNR_Value = psnr(noisy{k}, I);
+
+    % Display PSNR in Command Window
+    fprintf('%s PSNR = %.2f dB\n', ...
+        labels{k}, PSNR_Value);
+
+end
+
+
+%% =========================================================
+%  PART B: NOISE HISTOGRAMS
+%  =========================================================
+
+% Create a constant-intensity image
+flat = uint8(128 * ones(200));
+
+
+%% Generate Different Noise Distributions
+
+% Gaussian noise
+P{1} = imnoise(flat, 'gaussian', 0, 0.005);
+
+% Salt and Pepper noise
+P{2} = imnoise(flat, 'salt & pepper', 0.05);
+
+% Uniform noise
+P{3} = im2uint8(0.5 + ...
+    0.4 * (rand(200) - 0.5));
+
+% Exponential noise
+P{4} = im2uint8(0.3 - ...
+    0.08 * log(1 - rand(200)));
+
+
+%% Noise Distribution Labels
+
+pn = {'Gaussian', ...
+      'Salt & Pepper', ...
+      'Uniform', ...
+      'Exponential'};
+
+
+%% Display Noise Histograms
+
+figure('Name','Noise Histograms');
+
+for k = 1:4
+
+    subplot(2,2,k);
+
+    % Display histogram
+    imhist(P{k});
+
+    title([pn{k} ' Noise Histogram']);
+
+end
+
+
+%% =========================================================
+%  PART C: PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\n----- NOISE ANALYSIS COMPLETED -----\n');
+fprintf('Gaussian noise added successfully.\n');
+fprintf('Poisson noise added successfully.\n');
+fprintf('Salt & Pepper noise added successfully.\n');
+fprintf('Speckle noise added successfully.\n');
+fprintf('Uniform noise added successfully.\n');
+fprintf('Exponential noise added successfully.\n');
+fprintf('Noise histograms generated successfully.\n');
