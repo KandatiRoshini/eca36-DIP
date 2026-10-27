@@ -1,0 +1,165 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: READ GRAYSCALE IMAGE
+%  =========================================================
+
+% Read grayscale image
+I = imread('pout.tif');
+
+% Convert image to double precision
+r = im2double(I);
+
+%% =========================================================
+%  PART B: GRAY-LEVEL TRANSFORMATIONS
+%  =========================================================
+
+% 1. Image Negative
+s_neg = 1 - r;
+
+% 2. Logarithmic Transformation
+s_log = mat2gray(log(1 + r));
+
+% 3. Gamma Transformation - Gamma = 0.4
+s_g04 = r.^0.4;
+
+% 4. Gamma Transformation - Gamma = 2.5
+s_g25 = r.^2.5;
+
+% 5. Contrast Stretching
+s_cs = imadjust(I, stretchlim(I), []);
+
+%% =========================================================
+%  PART C: DISPLAY GRAY-LEVEL TRANSFORMATIONS
+%  =========================================================
+
+figure('Name','Gray-Level Transformations');
+
+subplot(2,3,1);
+imshow(r);
+title('Original');
+
+subplot(2,3,2);
+imshow(s_neg);
+title('Negative');
+
+subplot(2,3,3);
+imshow(s_log);
+title('Log Transformation');
+
+subplot(2,3,4);
+imshow(s_g04);
+title('Gamma = 0.4');
+
+subplot(2,3,5);
+imshow(s_g25);
+title('Gamma = 2.5');
+
+subplot(2,3,6);
+imshow(s_cs);
+title('Contrast Stretching');
+
+
+%% =========================================================
+%  PART D: TRANSFORMATION CURVES
+%  =========================================================
+
+% Generate input intensity values from 0 to 1
+rr = linspace(0,1,256);
+
+% Calculate transformation curves
+negative_curve = 1 - rr;
+log_curve = log(1 + rr) / log(2);
+gamma04_curve = rr.^0.4;
+gamma25_curve = rr.^2.5;
+identity_curve = rr;
+
+%% Display Transformation Curves
+
+figure('Name','Gray-Level Transformation Curves');
+
+plot(rr, negative_curve, ...
+     rr, log_curve, ...
+     rr, gamma04_curve, ...
+     rr, gamma25_curve, ...
+     rr, identity_curve, 'k--');
+
+legend('Negative', ...
+       'Log', ...
+       'Gamma 0.4', ...
+       'Gamma 2.5', ...
+       'Identity');
+
+xlabel('Input Level');
+ylabel('Output Level');
+
+title('Gray-Level Transformation Curves');
+
+grid on;
+axis square;
+
+
+%% =========================================================
+%  PART E: COLOUR CONTRAST STRETCHING
+%  =========================================================
+
+% Read RGB colour image
+RGB = imread('peppers.png');
+
+% Apply contrast stretching
+RGB_stretched = imadjust(RGB, [0.2 0.8], []);
+
+%% Display Colour Contrast Stretching
+
+figure('Name','Colour Contrast Stretching');
+
+subplot(1,2,1);
+imshow(RGB);
+title('Original Colour Image');
+
+subplot(1,2,2);
+imshow(RGB_stretched);
+title('Contrast Stretched');
+
+
+%% =========================================================
+%  PART F: INTENSITY-LEVEL SLICING
+%  =========================================================
+
+% Define lower and upper intensity limits
+A = 0.40;
+B = 0.70;
+
+%% Band Highlighting
+slice1 = r;
+
+% Highlight pixels between A and B
+slice1(r >= A & r <= B) = 1;
+
+%% Binary Intensity Slice
+slice2 = double(r >= A & r <= B);
+
+%% Display Intensity-Level Slicing
+
+figure('Name','Intensity-Level Slicing');
+
+subplot(1,3,1);
+imshow(r);
+title('Original');
+
+subplot(1,3,2);
+imshow(slice1);
+title('Band Highlighted');
+
+subplot(1,3,3);
+imshow(slice2);
+title('Binary Slice');
+
+
+%% =========================================================
+%  PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\nGray-level transformation and intensity-level slicing completed successfully!\n');
