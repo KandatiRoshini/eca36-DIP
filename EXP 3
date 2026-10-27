@@ -1,0 +1,116 @@
+clc;
+clear;
+close all;
+
+%% 1. Read Input Image
+I = imread('cameraman.tif');
+
+%% 2. Display Original Image
+figure('Name','Original Image');
+imshow(I);
+title('Original Cameraman Image');
+
+%% =========================================================
+%  PART A: SPATIAL RESOLUTION
+%  =========================================================
+
+f = [1 2 4 8];
+
+figure('Name','Spatial Resolution');
+
+for k = 1:length(f)
+
+    % Reduce spatial resolution by subsampling
+    Is = I(1:f(k):end, 1:f(k):end);
+
+    % Resize back to original size for display
+    Id = imresize(Is, size(I), 'nearest');
+
+    subplot(2,2,k);
+    imshow(Id);
+
+    title(sprintf('Factor = %d | Size = %d x %d', ...
+        f(k), size(Is,1), size(Is,2)));
+
+end
+
+%% =========================================================
+%  PART B: INTENSITY RESOLUTION
+%  =========================================================
+
+L = [256 64 16 8 4 2];
+
+figure('Name','Intensity Resolution');
+
+for k = 1:length(L)
+
+    % Calculate quantization step
+    step = 256 / L(k);
+
+    % Quantize image into L intensity levels
+    Iq = uint8(floor(double(I)/step) * ...
+        (255/(L(k)-1)));
+
+    subplot(2,3,k);
+    imshow(Iq);
+
+    title(sprintf('%d Intensity Levels', L(k)));
+
+end
+
+%% =========================================================
+%  PART C: INTERPOLATION METHODS
+%  =========================================================
+
+% Reduce image to 25% of original size
+small = imresize(I, 0.25);
+
+% Nearest Neighbor Interpolation
+Nn = imresize(small, 4, 'nearest');
+
+% Bilinear Interpolation
+Bl = imresize(small, 4, 'bilinear');
+
+% Bicubic Interpolation
+Bc = imresize(small, 4, 'bicubic');
+
+%% Display Interpolation Results
+
+figure('Name','Interpolation Methods');
+
+subplot(2,2,1);
+imshow(small);
+title('Low Resolution');
+
+subplot(2,2,2);
+imshow(Nn);
+title('Nearest Neighbor');
+
+subplot(2,2,3);
+imshow(Bl);
+title('Bilinear');
+
+subplot(2,2,4);
+imshow(Bc);
+title('Bicubic');
+
+%% =========================================================
+%  PART D: PSNR CALCULATION
+%  =========================================================
+
+fprintf('\n----- PSNR RESULTS -----\n');
+
+% Calculate PSNR for each interpolation method
+PSNR_Nearest = psnr(Nn, I);
+PSNR_Bilinear = psnr(Bl, I);
+PSNR_Bicubic = psnr(Bc, I);
+
+fprintf('Nearest Neighbor PSNR = %.2f dB\n', PSNR_Nearest);
+fprintf('Bilinear PSNR         = %.2f dB\n', PSNR_Bilinear);
+fprintf('Bicubic PSNR          = %.2f dB\n', PSNR_Bicubic);
+
+%% =========================================================
+%  PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\nImage resolution and interpolation analysis completed successfully!\n');
