@@ -1,0 +1,179 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: READ INPUT IMAGE
+%  =========================================================
+
+% Read grayscale image
+I = im2double(imread('cameraman.tif'));
+
+% Get image dimensions
+[M, N] = size(I);
+
+fprintf('Image Size = %d x %d\n', M, N);
+
+
+%% =========================================================
+%  PART B: 2-D DISCRETE FOURIER TRANSFORM (DFT)
+%  =========================================================
+
+% Compute 2-D Fourier Transform
+F = fft2(I);
+
+% Shift zero-frequency component to the centre
+Fc = fftshift(F);
+
+
+%% Display DFT Results
+
+figure('Name','2-D DFT Analysis');
+
+subplot(2,3,1);
+imshow(I);
+title('Original');
+
+subplot(2,3,2);
+imshow(log(1 + abs(F)), []);
+title('Uncentred Spectrum');
+
+subplot(2,3,3);
+imshow(log(1 + abs(Fc)), []);
+title('Centred Spectrum');
+
+subplot(2,3,4);
+imshow(angle(Fc), []);
+title('Phase');
+
+% Reconstruction using magnitude only
+subplot(2,3,5);
+imshow(real(ifft2(abs(F))), []);
+title('Magnitude Only');
+
+% Reconstruction using phase only
+subplot(2,3,6);
+imshow(real(ifft2(exp(1i * angle(F)))), []);
+title('Phase Only');
+
+
+%% =========================================================
+%  PART C: FREQUENCY-DOMAIN FILTER DESIGN
+%  =========================================================
+
+% Create frequency coordinate grids
+[u, v] = meshgrid(-N/2:N/2-1, ...
+                  -M/2:M/2-1);
+
+% Calculate distance from frequency origin
+D = sqrt(u.^2 + v.^2);
+
+% Cut-off frequency
+D0 = 30;
+
+% Butterworth filter order
+n = 2;
+
+
+%% =========================================================
+%  PART D: LOW-PASS FILTERS
+%  =========================================================
+
+% 1. Ideal Low-Pass Filter
+H{1} = double(D <= D0);
+
+% 2. Butterworth Low-Pass Filter
+H{2} = 1 ./ (1 + (D/D0).^(2*n));
+
+% 3. Gaussian Low-Pass Filter
+H{3} = exp(-(D.^2) / (2*D0^2));
+
+% Filter names
+names = {'Ideal', 'Butterworth', 'Gaussian'};
+
+
+%% Display Low-Pass Filter Results
+
+figure('Name','Low-Pass Filtering');
+
+for k = 1:3
+
+    % Apply frequency-domain filter
+    g = real(ifft2(ifftshift(Fc .* H{k})));
+
+    % Display filter
+    subplot(2,3,k);
+    imshow(H{k});
+    title([names{k} ' LPF']);
+
+    % Display filtered image
+    subplot(2,3,k+3);
+    imshow(g);
+    title([names{k} ' LPF Output']);
+
+end
+
+
+%% =========================================================
+%  PART E: HIGH-PASS FILTERS
+%  =========================================================
+
+figure('Name','High-Pass Filtering');
+
+for k = 1:3
+
+    % High-pass filter is the complement of LPF
+    Hhp = 1 - H{k};
+
+    % Apply high-pass filter
+    g = real(ifft2(ifftshift(Fc .* Hhp)));
+
+    % Display filter
+    subplot(2,3,k);
+    imshow(Hhp);
+    title([names{k} ' HPF']);
+
+    % Display filtered image
+    subplot(2,3,k+3);
+    imshow(g, []);
+    title([names{k} ' HPF Output']);
+
+end
+
+
+%% =========================================================
+%  PART F: BUTTERWORTH LPF 3-D SURFACE
+%  =========================================================
+
+figure('Name','Butterworth LPF Surface');
+
+% Reduce number of points for better visualization
+u_small = u(1:4:end, 1:4:end);
+v_small = v(1:4:end, 1:4:end);
+H_small = H{2}(1:4:end, 1:4:end);
+
+% Create 3-D mesh plot
+mesh(u_small, v_small, H_small);
+
+xlabel('u');
+ylabel('v');
+zlabel('H(u,v)');
+
+title('Butterworth LPF');
+
+grid on;
+
+
+%% =========================================================
+%  PART G: PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\n----- FREQUENCY DOMAIN PROCESSING COMPLETED -----\n');
+fprintf('2-D DFT calculated successfully.\n');
+fprintf('Ideal LPF applied.\n');
+fprintf('Butterworth LPF applied.\n');
+fprintf('Gaussian LPF applied.\n');
+fprintf('Ideal HPF applied.\n');
+fprintf('Butterworth HPF applied.\n');
+fprintf('Gaussian HPF applied.\n');
+fprintf('Butterworth LPF surface generated successfully.\n');
