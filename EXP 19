@@ -1,0 +1,118 @@
+clc;
+clear;
+close all;
+
+%% STEP 1: Read Input Image
+I = imread('cameraman.tif');
+
+% Convert image to double and shift pixel values
+X = double(I) - 128;
+
+% Create 8x8 DCT transformation matrix
+T = dctmtx(8);
+
+
+%% STEP 2: Block DCT
+% Apply DCT to each 8x8 image block
+C = blockproc(X, [8 8], ...
+    @(b) T * b.data * T');
+
+% Display Original Image and DCT
+figure('Name','Block DCT');
+
+subplot(1,2,1);
+imshow(I);
+title('Original Image');
+
+subplot(1,2,2);
+imshow(log(1 + abs(C)), []);
+title('8x8 Block DCT');
+
+
+%% STEP 3: JPEG Quantisation Matrix
+Q50 = [16 11 10 16 24 40 51 61;
+       12 12 14 19 26 58 60 55;
+       14 13 16 24 40 57 69 56;
+       14 17 22 29 51 87 80 62;
+       18 22 37 56 68 109 103 77;
+       24 35 55 64 81 104 113 92;
+       49 64 78 87 103 121 120 101;
+       72 92 95 98 112 100 103 99];
+
+
+%% STEP 4: Define Quality Factors
+quality = [90 50 25 10];
+
+figure('Name','DCT Compression');
+
+fprintf('Quality  Non-zero Coeffs  Approx. CR  PSNR (dB)\n');
+
+
+%% STEP 5: DCT Compression for Different Quality Values
+for k = 1:numel(quality)
+
+    q = quality(k);
+
+    % Calculate JPEG scaling factor
+    if q < 50
+        s = 5000 / q;
+    else
+        s = 200 - 2 * q;
+    end
+
+    % Generate scaled quantisation matrix
+    Q = max(floor((Q50 * s + 50) / 100), 1);
+
+
+    %% STEP 6: Quantisation
+    Cq = blockproc(X, [8 8], ...
+        @(b) round((T * b.data * T') ./ Q));
+
+
+    %% STEP 7: Inverse Quantisation and IDCT
+    Xr = blockproc(Cq, [8 8], ...
+        @(b) T' * (b.data .* Q) * T);
+
+
+    %% STEP 8: Reconstruct Image
+    R = uint8(Xr + 128);
+
+
+    %% STEP 9: Calculate Compression Ratio
+    CR = numel(I) / nnz(Cq);
+
+
+    %% STEP 10: Calculate PSNR
+    P = psnr(R, I);
+
+
+    %% STEP 11: Display Results
+    fprintf('%5d %15d %11.2f %11.2f\n', ...
+        q, nnz(Cq), CR, P);
+
+    subplot(2,2,k);
+    imshow(R);
+    title(sprintf('Quality %d, PSNR = %.1f dB', q, P));
+
+end
+
+
+%% STEP 12: Standard JPEG Compression
+jpegQuality = [90 50 10];
+
+for q = jpegQuality
+
+    % Create JPEG filename
+    fname = sprintf('cameraman_q%d.jpg', q);
+
+    % Save image using JPEG compression
+    imwrite(I, fname, 'Quality', q);
+
+    % Get JPEG file information
+    d = dir(fname);
+
+    % Display file size
+    fprintf('JPEG Quality %d: File size = %d bytes\n', ...
+        q, d.bytes);
+
+end
