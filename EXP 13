@@ -1,0 +1,257 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: ITERATIVE THRESHOLDING AND OTSU
+%  =========================================================
+
+% Read input image
+I = imread('coins.png');
+
+
+%% 1. Initial Threshold
+
+% Calculate initial threshold using mean intensity
+T = mean(double(I(:)));
+
+% Initialize iteration counter
+iter = 0;
+
+
+%% 2. Iterative Thresholding
+
+while true
+
+    % Increase iteration count
+    iter = iter + 1;
+
+    % Calculate mean of pixels above threshold
+    mean_high = mean(double(I(I > T)));
+
+    % Calculate mean of pixels below or equal to threshold
+    mean_low = mean(double(I(I <= T)));
+
+    % Calculate new threshold
+    Tnext = 0.5 * (mean_high + mean_low);
+
+    % Check convergence condition
+    if abs(T - Tnext) < 0.5
+
+        T = Tnext;
+        break;
+
+    end
+
+    % Update threshold
+    T = Tnext;
+
+end
+
+
+%% 3. Generate Iterative Thresholded Image
+
+BWi = I > T;
+
+
+%% 4. Otsu Thresholding
+
+% Calculate Otsu threshold
+level = graythresh(I);
+
+% Convert image to binary
+BWo = imbinarize(I, level);
+
+
+%% Display Threshold Results
+
+fprintf('\n============================================\n');
+fprintf('       THRESHOLDING RESULTS\n');
+fprintf('============================================\n');
+
+fprintf('Iterative Threshold = %.2f\n', T);
+fprintf('Number of Iterations = %d\n', iter);
+
+fprintf('Otsu Threshold = %.2f\n', ...
+    255 * level);
+
+
+%% =========================================================
+%  PART B: ADAPTIVE THRESHOLDING
+%  =========================================================
+
+% Read rice image
+R = imread('rice.png');
+
+
+%% 1. Global Thresholding
+
+BWg = imbinarize(R);
+
+
+%% 2. Adaptive Thresholding
+
+BWa = imbinarize(R, ...
+                'adaptive', ...
+                'Sensitivity', 0.4);
+
+
+%% =========================================================
+%  PART C: DISPLAY THRESHOLDING RESULTS
+%  =========================================================
+
+figure('Name','Thresholding Results');
+
+% Original Coins
+subplot(2,3,1);
+imshow(I);
+title('Original Coins');
+
+% Iterative Threshold
+subplot(2,3,2);
+imshow(BWi);
+title('Iterative Threshold');
+
+% Otsu Threshold
+subplot(2,3,3);
+imshow(BWo);
+title('Otsu Threshold');
+
+% Original Rice
+subplot(2,3,4);
+imshow(R);
+title('Original Rice');
+
+% Global Threshold
+subplot(2,3,5);
+imshow(BWg);
+title('Global Threshold');
+
+% Adaptive Threshold
+subplot(2,3,6);
+imshow(BWa);
+title('Adaptive Threshold');
+
+
+%% =========================================================
+%  PART D: SEEDED REGION GROWING
+%  =========================================================
+
+% Display image for seed selection
+figure('Name','Seed Selection');
+
+imshow(I);
+title('Select a Seed Point');
+
+% Select seed point using mouse
+[c, r] = ginput(1);
+
+% Round coordinates to nearest pixel
+r = round(r);
+c = round(c);
+
+
+%% Region Growing
+
+% Perform gray-level connected region growing
+BWr = grayconnected(I, r, c, 40);
+
+
+%% Display Region Growing Result
+
+figure('Name','Seeded Region Growing');
+
+imshow(labeloverlay(I, BWr));
+title('Region Growing');
+
+
+%% =========================================================
+%  PART E: MARKER-CONTROLLED WATERSHED
+%  =========================================================
+
+%% 1. Fill Holes in Binary Image
+
+bw = imfill(BWo, 'holes');
+
+
+%% 2. Calculate Distance Transform
+
+Dt = -bwdist(~bw);
+
+
+%% 3. Generate Regional Minima
+
+markers = imextendedmin(Dt, 2);
+
+
+%% 4. Impose Minima on Distance Transform
+
+Dt = imimposemin(Dt, markers);
+
+
+%% 5. Apply Watershed Transform
+
+Lw = watershed(Dt);
+
+
+%% 6. Remove Background
+
+Lw(~bw) = 0;
+
+
+%% =========================================================
+%  PART F: COUNT DETECTED OBJECTS
+%  =========================================================
+
+% Find connected components
+cc = bwconncomp(bw);
+
+% Number of detected coins
+numCoins = cc.NumObjects;
+
+
+%% Display Number of Coins
+
+fprintf('\n============================================\n');
+fprintf('       WATERSHED SEGMENTATION RESULTS\n');
+fprintf('============================================\n');
+
+fprintf('Number of coins detected = %d\n', ...
+    numCoins);
+
+
+%% =========================================================
+%  PART G: DISPLAY WATERSHED SEGMENTATION
+%  =========================================================
+
+figure('Name','Marker-Controlled Watershed');
+
+% Filled binary mask
+subplot(1,2,1);
+imshow(bw);
+title('Filled Binary Mask');
+
+% Watershed segmentation
+subplot(1,2,2);
+imshow(label2rgb(Lw, ...
+                 'jet', ...
+                 'k', ...
+                 'shuffle'));
+
+title('Watershed Segmentation');
+
+
+%% =========================================================
+%  PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\n============================================\n');
+fprintf(' IMAGE SEGMENTATION COMPLETED SUCCESSFULLY\n');
+fprintf('============================================\n');
+
+fprintf('Iterative thresholding completed.\n');
+fprintf('Otsu thresholding completed.\n');
+fprintf('Global thresholding completed.\n');
+fprintf('Adaptive thresholding completed.\n');
+fprintf('Seeded region growing completed.\n');
+fprintf('Marker-controlled watershed completed.\n');
