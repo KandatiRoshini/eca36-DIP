@@ -1,0 +1,177 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: EDGE DETECTION
+%  =========================================================
+
+% Read input image
+I = imread('circuit.tif');
+
+% Define edge detection methods
+methods = {'roberts', ...
+           'prewitt', ...
+           'sobel', ...
+           'log', ...
+           'canny'};
+
+
+%% Display Original Image
+
+figure('Name','Edge Detection');
+
+subplot(2,3,1);
+imshow(I);
+title('Original');
+
+
+%% Apply Different Edge Detection Methods
+
+for k = 1:5
+
+    % Detect edges
+    E = edge(I, methods{k});
+
+    % Display detected edges
+    subplot(2,3,k+1);
+    imshow(E);
+    title(upper(methods{k}));
+
+    % Count edge pixels
+    edgePixels = nnz(E);
+
+    % Display number of edge pixels
+    fprintf('%s: %d edge pixels\n', ...
+        methods{k}, edgePixels);
+
+end
+
+
+%% =========================================================
+%  PART B: GRADIENT MAGNITUDE AND DIRECTION
+%  =========================================================
+
+% Calculate gradient magnitude and direction
+[Gmag, Gdir] = imgradient(I, 'sobel');
+
+
+%% Display Gradient Results
+
+figure('Name','Gradient Analysis');
+
+subplot(1,2,1);
+imshow(Gmag, []);
+title('Gradient Magnitude');
+
+subplot(1,2,2);
+imshow(Gdir, []);
+title('Gradient Direction');
+
+
+%% =========================================================
+%  PART C: EDGE LINKING USING HOUGH TRANSFORM
+%  =========================================================
+
+% Detect edges using Canny method
+BW = edge(I, 'canny');
+
+
+%% Compute Hough Transform
+
+[H, theta, rho] = hough(BW);
+
+
+%% Find Hough Peaks
+
+P = houghpeaks(H, ...
+               10, ...
+               'Threshold', ...
+               ceil(0.3 * max(H(:))));
+
+
+%% Detect Line Segments
+
+lines = houghlines(BW, ...
+                   theta, ...
+                   rho, ...
+                   P, ...
+                   'FillGap', 5, ...
+                   'MinLength', 7);
+
+
+%% =========================================================
+%  PART D: DISPLAY HOUGH TRANSFORM
+%  =========================================================
+
+figure('Name','Hough Transform and Line Detection');
+
+% Display Hough Transform
+subplot(1,2,1);
+
+imshow(mat2gray(H), ...
+       'XData', theta, ...
+       'YData', rho, ...
+       'InitialMagnification', 'fit');
+
+axis on;
+axis normal;
+hold on;
+
+% Mark detected Hough peaks
+plot(theta(P(:,2)), ...
+     rho(P(:,1)), ...
+     'rs');
+
+xlabel('\theta (degrees)');
+ylabel('\rho');
+
+title('Hough Transform');
+
+
+%% =========================================================
+%  PART E: DISPLAY DETECTED LINE SEGMENTS
+%  =========================================================
+
+subplot(1,2,2);
+
+imshow(I);
+hold on;
+
+title('Detected Line Segments');
+
+
+%% Draw Detected Lines
+
+for k = 1:length(lines)
+
+    % Get start and end points
+    xy = [lines(k).point1;
+          lines(k).point2];
+
+    % Plot line segment
+    plot(xy(:,1), ...
+         xy(:,2), ...
+         'g', ...
+         'LineWidth', 2);
+
+end
+
+
+%% =========================================================
+%  PART F: DISPLAY RESULTS
+%  =========================================================
+
+fprintf('\n============================================\n');
+fprintf('       EDGE AND LINE DETECTION RESULTS\n');
+fprintf('============================================\n');
+
+fprintf('Number of line segments = %d\n', ...
+    length(lines));
+
+
+%% =========================================================
+%  PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\nEdge detection and Hough transform analysis completed successfully!\n');
