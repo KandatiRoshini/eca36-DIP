@@ -1,0 +1,79 @@
+clc;
+clear;
+close all;
+
+%% 1. Read RGB Colour Image
+RGB = imread('peppers.png');
+
+%% 2. Display Image Information
+info = imfinfo('peppers.png');
+
+fprintf('----- IMAGE INFORMATION -----\n');
+fprintf('File format : %s\n', info.Format);
+fprintf('Bit depth   : %d bits/pixel\n', info.BitDepth);
+
+[rows, cols, channels] = size(RGB);
+fprintf('RGB image size : %d x %d x %d\n', rows, cols, channels);
+
+%% 3. Convert RGB Image to Gray-Scale
+G = rgb2gray(RGB);
+
+[gray_rows, gray_cols] = size(G);
+fprintf('\n----- GRAY-SCALE IMAGE -----\n');
+fprintf('Gray image size : %d x %d\n', gray_rows, gray_cols);
+fprintf('Image class     : %s\n', class(G));
+
+%% 4. Gray-Scale Conversion Using Luminance Equation
+Gm = uint8(0.2989 * double(RGB(:,:,1)) + ...
+           0.5870 * double(RGB(:,:,2)) + ...
+           0.1140 * double(RGB(:,:,3)));
+
+%% 5. Compare rgb2gray and Luminance Equation
+difference = max(abs(double(G(:)) - double(Gm(:))));
+
+fprintf('\n----- CONVERSION COMPARISON -----\n');
+fprintf('Maximum difference = %d\n', difference);
+
+%% 6. Calculate Otsu Threshold
+level = graythresh(G);
+
+fprintf('\n----- THRESHOLDING -----\n');
+fprintf('Otsu threshold = %.4f\n', level);
+fprintf('Otsu threshold (0-255) = %d\n', round(255 * level));
+
+%% 7. Convert Gray-Scale Image to Binary Image
+% Fixed threshold = 0.5
+BW1 = imbinarize(G, 0.5);
+
+% Otsu threshold
+BW2 = imbinarize(G, level);
+
+%% 8. Display All Image Conversions
+figure('Name', 'Image Conversions');
+
+subplot(2,2,1);
+imshow(RGB);
+title('Colour Image');
+
+subplot(2,2,2);
+imshow(G);
+title('Gray-Scale Image');
+
+subplot(2,2,3);
+imshow(BW1);
+title('Binary Image (T = 0.5)');
+
+subplot(2,2,4);
+imshow(BW2);
+title(sprintf('Binary Image (Otsu, T = %.2f)', level));
+
+%% 9. Save Converted Images
+imwrite(G, 'peppers_gray.png');
+imwrite(BW2, 'peppers_binary.png');
+
+fprintf('\n----- OUTPUT FILES -----\n');
+fprintf('Gray-scale image saved as : peppers_gray.png\n');
+fprintf('Binary image saved as     : peppers_binary.png\n');
+
+%% 10. End
+fprintf('\nImage conversion completed successfully!\n');
