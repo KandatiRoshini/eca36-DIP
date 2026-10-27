@@ -1,0 +1,161 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: READ INPUT IMAGE
+%  =========================================================
+
+% Read the original grayscale image
+I = imread('cameraman.tif');
+
+
+%% =========================================================
+%  PART B: ADD DIFFERENT TYPES OF NOISE
+%  =========================================================
+
+% Gaussian Noise
+Ng = imnoise(I, 'gaussian', 0, 0.01);
+
+% Salt and Pepper Noise
+Nsp = imnoise(I, 'salt & pepper', 0.10);
+
+% Pepper Noise
+Npp = I;
+Npp(rand(size(I)) < 0.05) = 0;
+
+
+%% Store Noisy Images and Names
+
+noisy = {Ng, Nsp, Npp};
+
+nname = {'Gaussian', ...
+         'Salt & Pepper', ...
+         'Pepper'};
+
+
+%% =========================================================
+%  PART C: DEFINE FILTER NAMES
+%  =========================================================
+
+fname = {'Arithmetic Mean', ...
+         'Geometric Mean', ...
+         'Median', ...
+         'Max', ...
+         'Min', ...
+         'Adaptive Wiener'};
+
+
+%% Initialize PSNR Table
+
+psnrTable = zeros(3,6);
+
+
+%% =========================================================
+%  PART D: IMAGE FILTERING
+%  =========================================================
+
+for n = 1:3
+
+    % Select noisy image
+    X = noisy{n};
+
+    %% 1. Arithmetic Mean Filter
+    out{1} = imfilter(X, ...
+        fspecial('average',3), ...
+        'replicate');
+
+
+    %% 2. Geometric Mean Filter
+    out{2} = uint8(exp( ...
+        imfilter(log(double(X)+1), ...
+        ones(3)/9, ...
+        'replicate')) - 1);
+
+
+    %% 3. Median Filter
+    out{3} = medfilt2(X, ...
+        [3 3], ...
+        'symmetric');
+
+
+    %% 4. Maximum Filter
+    out{4} = ordfilt2(X, ...
+        9, ...
+        ones(3), ...
+        'symmetric');
+
+
+    %% 5. Minimum Filter
+    out{5} = ordfilt2(X, ...
+        1, ...
+        ones(3), ...
+        'symmetric');
+
+
+    %% 6. Adaptive Wiener Filter
+    out{6} = wiener2(X, ...
+        [5 5]);
+
+
+    %% =====================================================
+    %  DISPLAY ORIGINAL AND FILTERED IMAGES
+    %  =====================================================
+
+    figure('Name', [nname{n} ' Noise Filtering']);
+
+    % Original image
+    subplot(2,4,1);
+    imshow(I);
+    title('Original');
+
+
+    % Noisy image
+    subplot(2,4,2);
+    imshow(X);
+    title(nname{n});
+
+
+    %% Display Filtered Images
+
+    for k = 1:6
+
+        % Calculate PSNR
+        psnrTable(n,k) = psnr(out{k}, I);
+
+        % Display filtered output
+        subplot(2,4,k+2);
+        imshow(out{k});
+        title(fname{k});
+
+    end
+
+end
+
+
+%% =========================================================
+%  PART E: CREATE PSNR COMPARISON TABLE
+%  =========================================================
+
+T = array2table(psnrTable, ...
+    'VariableNames', ...
+    matlab.lang.makeValidName(fname), ...
+    'RowNames', nname);
+
+
+%% =========================================================
+%  PART F: DISPLAY PSNR RESULTS
+%  =========================================================
+
+fprintf('\n============================================\n');
+fprintf('       PSNR AFTER IMAGE FILTERING\n');
+fprintf('============================================\n');
+
+disp(T);
+
+
+%% =========================================================
+%  PART G: PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\nImage noise removal and filtering analysis completed successfully!\n');
