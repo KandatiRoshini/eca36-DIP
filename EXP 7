@@ -1,0 +1,144 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: READ INPUT IMAGE
+%  =========================================================
+
+% Read grayscale image
+I = im2double(imread('cameraman.tif'));
+
+%% =========================================================
+%  PART B: SMOOTHING FILTERS
+%  =========================================================
+
+% Create 3x3 averaging filter
+h3 = fspecial('average', 3);
+
+% Create 9x9 averaging filter
+h9 = fspecial('average', 9);
+
+% Create 9x9 Gaussian filter with sigma = 2
+hg = fspecial('gaussian', [9 9], 2);
+
+%% Apply Smoothing Filters
+
+S3 = imfilter(I, h3, 'replicate');
+S9 = imfilter(I, h9, 'replicate');
+Sg = imfilter(I, hg, 'replicate');
+
+%% Display Smoothing Results
+
+figure('Name','Smoothing Filters');
+
+subplot(2,2,1);
+imshow(I);
+title('Original Image');
+
+subplot(2,2,2);
+imshow(S3);
+title('Average 3x3');
+
+subplot(2,2,3);
+imshow(S9);
+title('Average 9x9');
+
+subplot(2,2,4);
+imshow(Sg);
+title('Gaussian Filter');
+
+
+%% =========================================================
+%  PART C: LAPLACIAN SHARPENING
+%  =========================================================
+
+% Define Laplacian filter
+hL = [0 1 0;
+      1 -4 1;
+      0 1 0];
+
+% Apply Laplacian filter
+L = imfilter(I, hL, 'replicate');
+
+% Laplacian sharpening
+G1 = I - L;
+
+
+%% =========================================================
+%  PART D: UNSHARP MASKING
+%  =========================================================
+
+% Generate unsharp mask
+mask = I - Sg;
+
+% Apply unsharp masking
+G2 = I + mask;
+
+
+%% =========================================================
+%  PART E: HIGH-BOOST FILTERING
+%  =========================================================
+
+% Apply high-boost filtering
+G3 = I + 3 * mask;
+
+
+%% =========================================================
+%  PART F: SOBEL GRADIENT
+%  =========================================================
+
+% Create Sobel filter
+hs = fspecial('sobel');
+
+% Horizontal gradient
+Gx = imfilter(I, hs', 'replicate');
+
+% Vertical gradient
+Gy = imfilter(I, hs, 'replicate');
+
+% Gradient magnitude
+Gm = sqrt(Gx.^2 + Gy.^2);
+
+
+%% =========================================================
+%  PART G: DISPLAY SHARPENING RESULTS
+%  =========================================================
+
+figure('Name','Sharpening Filters');
+
+subplot(2,3,1);
+imshow(I);
+title('Original');
+
+subplot(2,3,2);
+imshow(L, []);
+title('Laplacian');
+
+subplot(2,3,3);
+imshow(G1);
+title('Laplacian Sharpening');
+
+subplot(2,3,4);
+imshow(G2);
+title('Unsharp Masking');
+
+subplot(2,3,5);
+imshow(G3);
+title('High-Boost Filtering');
+
+subplot(2,3,6);
+imshow(Gm, []);
+title('Sobel Gradient');
+
+
+%% =========================================================
+%  PART H: PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\n----- IMAGE FILTERING COMPLETED -----\n');
+fprintf('Smoothing filters applied successfully.\n');
+fprintf('Laplacian sharpening completed.\n');
+fprintf('Unsharp masking completed.\n');
+fprintf('High-boost filtering completed.\n');
+fprintf('Sobel gradient detection completed.\n');
