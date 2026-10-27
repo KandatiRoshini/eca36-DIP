@@ -1,0 +1,138 @@
+clc;
+clear;
+close all;
+
+%% =========================================================
+%  PART A: HISTOGRAM PROCESSING
+%  =========================================================
+
+% Read grayscale image
+I = imread('pout.tif');
+
+%% 1. Histogram Equalization
+Jeq = histeq(I, 256);
+
+%% 2. CLAHE - Adaptive Histogram Equalization
+Jcl = adapthisteq(I, 'ClipLimit', 0.02);
+
+%% 3. Histogram Matching
+ref = imread('coins.png');
+Jsp = imhistmatch(I, ref);
+
+%% Store Images and Titles
+imgs = {I, Jeq, Jcl, Jsp};
+
+titles = {'Original', ...
+          'Equalized', ...
+          'CLAHE', ...
+          'Histogram Matched'};
+
+%% Display Images and Histograms
+
+figure('Name','Histogram Processing');
+
+for k = 1:4
+
+    % Display image
+    subplot(4,2,2*k-1);
+    imshow(imgs{k});
+    title(titles{k});
+
+    % Display histogram
+    subplot(4,2,2*k);
+    imhist(imgs{k});
+    title(['Histogram: ' titles{k}]);
+
+end
+
+
+%% =========================================================
+%  PART B: MANUAL HISTOGRAM EQUALIZATION
+%  =========================================================
+
+% Calculate histogram
+nk = imhist(I);
+
+% Calculate probability distribution
+pr = nk / numel(I);
+
+% Calculate cumulative distribution function
+cdf = cumsum(pr);
+
+% Generate transformation function
+T = uint8(round(255 * cdf));
+
+% Apply transformation to the image
+Jm = T(double(I) + 1);
+
+
+%% Display Manual Equalization Results
+
+figure('Name','Manual Histogram Equalization');
+
+% Transformation curve
+subplot(1,3,1);
+
+plot(0:255, T, 'LineWidth', 1.5);
+
+axis([0 255 0 255]);
+axis square;
+
+xlabel('Input Level');
+ylabel('Output Level');
+title('Transformation Curve');
+
+grid on;
+
+
+% Manual equalized image
+subplot(1,3,2);
+
+imshow(Jm);
+title('Manual Equalization');
+
+
+% Equalized histogram
+subplot(1,3,3);
+
+imhist(Jm);
+title('Equalized Histogram');
+
+
+%% =========================================================
+%  PART C: STATISTICAL COMPARISON
+%  =========================================================
+
+% Calculate standard deviation
+OriginalStd = std2(I);
+EqualizedStd = std2(Jm);
+
+% Calculate dynamic range
+OriginalMin = min(I(:));
+OriginalMax = max(I(:));
+
+EqualizedMin = min(Jm(:));
+EqualizedMax = max(Jm(:));
+
+
+%% Display Statistical Results
+
+fprintf('\n----- IMAGE STATISTICS -----\n');
+
+fprintf('Standard deviation:\n');
+fprintf('Original  = %.2f\n', OriginalStd);
+fprintf('Equalized = %.2f\n', EqualizedStd);
+
+fprintf('\nDynamic range:\n');
+fprintf('Original  = [%d %d]\n', ...
+    OriginalMin, OriginalMax);
+
+fprintf('Equalized = [%d %d]\n', ...
+    EqualizedMin, EqualizedMax);
+
+
+%% =========================================================
+%  PART D: PROGRAM COMPLETION
+%  =========================================================
+
+fprintf('\nHistogram processing completed successfully!\n');
