@@ -1,0 +1,151 @@
+clc;
+clear;
+close all;
+
+
+%% STEP 1: Read Input Images
+
+cam = imread('cameraman.tif');
+bag = imread('bag.png');
+
+
+%% STEP 2: Create Texture Samples
+
+P = {cam(1:64,1:64), ...
+     bag(1:64,1:64), ...
+     im2uint8(checkerboard(8))};
+
+names = {'Smooth (sky)', ...
+         'Coarse (fabric)', ...
+         'Regular (checkerboard)'};
+
+
+%% STEP 3: Display Texture Samples
+
+figure('Name','Texture Samples');
+
+for k = 1:3
+    subplot(1,3,k);
+    imshow(P{k});
+    title(names{k});
+end
+
+
+%% STEP 4: Histogram-Based Statistical Descriptors
+
+fprintf('\n');
+fprintf('%-24s %7s %7s %7s %8s %7s %8s\n', ...
+    'Region', 'Mean', 'StdDev', 'R', ...
+    'Mu3', 'Unif', 'Entropy');
+
+
+%% STEP 5: Calculate Histogram Features
+
+for k = 1:3
+
+    % Convert image pixels to double
+    z = double(P{k}(:));
+
+    % Mean
+    m = mean(z);
+
+    % Standard Deviation
+    s = std(z);
+
+    % Roughness
+    R = 1 - 1/(1 + s^2/255^2);
+
+    % Third Central Moment
+    mu3 = mean((z - m).^3)/255^2;
+
+    % Probability distribution
+    p = imhist(P{k})/numel(z);
+
+    % Uniformity
+    U = sum(p.^2);
+
+    % Entropy
+    e = entropy(P{k});
+
+    % Display calculated values
+    fprintf('%-24s %7.2f %7.2f %7.4f %8.3f %7.4f %8.3f\n', ...
+        names{k}, m, s, R, mu3, U, e);
+
+end
+
+
+%% STEP 6: Define GLCM Offsets
+
+offsets = [0 1; ...
+          -1 1; ...
+          -1 0; ...
+          -1 -1];
+
+
+%% STEP 7: GLCM Texture Descriptors
+
+fprintf('\n');
+fprintf('%-24s %9s %12s %8s %12s\n', ...
+    'Region', 'Contrast', ...
+    'Correlation', 'Energy', 'Homogeneity');
+
+
+%% STEP 8: Calculate GLCM Features
+
+for k = 1:3
+
+    % Generate GLCM
+    glcm = graycomatrix(P{k}, ...
+        'Offset', offsets, ...
+        'NumLevels', 8, ...
+        'Symmetric', true);
+
+    % Calculate GLCM properties
+    g = graycoprops(glcm, ...
+        {'Contrast', ...
+         'Correlation', ...
+         'Energy', ...
+         'Homogeneity'});
+
+    % Display average values
+    fprintf('%-24s %9.3f %12.3f %8.3f %12.3f\n', ...
+        names{k}, ...
+        mean(g.Contrast), ...
+        mean(g.Correlation, 'omitnan'), ...
+        mean(g.Energy), ...
+        mean(g.Homogeneity));
+
+end
+
+
+%% STEP 9: Local Texture Analysis
+
+figure('Name','Local Texture Measures');
+
+
+%% STEP 10: Original Image
+
+subplot(2,2,1);
+imshow(bag);
+title('Original Image');
+
+
+%% STEP 11: Local Range
+
+subplot(2,2,2);
+imshow(rangefilt(bag), []);
+title('Local Range');
+
+
+%% STEP 12: Local Standard Deviation
+
+subplot(2,2,3);
+imshow(stdfilt(bag), []);
+title('Local Standard Deviation');
+
+
+%% STEP 13: Local Entropy
+
+subplot(2,2,4);
+imshow(entropyfilt(bag), []);
+title('Local Entropy');
